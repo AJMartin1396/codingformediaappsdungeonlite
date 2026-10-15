@@ -5,16 +5,22 @@ using UnityEngine.InputSystem; // Required for the new Input System
 public class SimplePlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
+    //Added Jumping variables
+    [SerializeField] private float jumpForce = 5f;
+    private Rigidbody rb;
+    private bool isGrounded;
+    private int jumpCount = 0;
+    private const int maxJumps = 2;
+    //New and initial variables
     public float speed = 6f;
     public float moveY = 0f;
     public float gravity = 0.1f;
     private CharacterController controller;
     private GameObject player;
-    private bool canDouble = false;
     void Start()
     {
         controller = GetComponent<CharacterController>();
-       
+        rb = GetComponent<Rigidbody>();
         player = GameObject.FindGameObjectWithTag("Player");
     }
 
@@ -27,7 +33,6 @@ public class SimplePlayerMovement : MonoBehaviour
         if (controller.isGrounded)
         {
             moveY = 0f;
-            canDouble = true;
         }
         else moveY -= gravity;
 
@@ -38,12 +43,13 @@ public class SimplePlayerMovement : MonoBehaviour
         if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveX = 1f;
         if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveZ = -1f;
         if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveZ = 1f;
-        if (Input.getKeyDown("space")) if (controller.isGrounded) moveY = 4f;
-        else if (canDouble)
+        if (Keyboard.current.spaceKey.wasPressedThisFrame)
         {
-            moveY = 2f;
-            canDouble = false;
-        }
+            if (isGrounded || jumpCount < maxJumps)
+            {
+                Jump();
+            }
+        } 
 
         // Combine inputs into a direction vector and normalize so diagonal movement isn't faster
         Vector3 move = new Vector3(moveX, 0, moveZ).normalized;
@@ -52,5 +58,33 @@ public class SimplePlayerMovement : MonoBehaviour
 
         // Move the player
         controller.Move(move * speed * Time.deltaTime);
+
+    
+    }
+    void Jump()
+    {
+        //Reset vertical velocity
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x,0f,rb.linearVelocity.z);
+
+        //Uppies!!!!
+        rb.AddForce(Vector3.up*jumpForce,ForceMode.Impulse);
+
+        jumpCount++;
+    }
+    
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = true;
+            jumpCount = 0; //Resets jumps
+        }
+    }
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = false;
+        }
     }
 }
