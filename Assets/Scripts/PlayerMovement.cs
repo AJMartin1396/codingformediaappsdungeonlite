@@ -10,10 +10,11 @@ public class SimplePlayerMovement : MonoBehaviour
     [SerializeField] private float jumpForce = 5f;
     private int jumpCount = 0;
     private const int maxJumps = 2;
+    private bool canWallJump = false;
     //New and initial variables
     public float speed = 6f;
-    public float moveY = 0f;
     public float gravity = -9.81f;
+    public float airResist = 0.2f;
     private CharacterController controller;
     private GameObject player;
 
@@ -36,7 +37,8 @@ public class SimplePlayerMovement : MonoBehaviour
 
 
         if (controller.isGrounded && velocity.y < 0f) //reset velocity and jump count here only while grounded and not moving horizontally
-        {
+        {   
+            velocity.x = 0f;
             velocity.y = -2f;
             jumpCount = 0;
         }
@@ -45,10 +47,15 @@ public class SimplePlayerMovement : MonoBehaviour
         {
             Jump();
         }
+        if (Keyboard.current.spaceKey.wasPressedThisFrame) Debug.Log("Grounded?: "+canWallJump);
 
         //make the player jump
         velocity.y += 2*gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
+
+        //makes the wall jump slow down
+        if (velocity.x >0) velocity.x -= airResist;
+        if (velocity.x<0) velocity.x += airResist;
 
 
         // Check WASD or Arrow keys using the new Input System
@@ -69,11 +76,29 @@ public class SimplePlayerMovement : MonoBehaviour
         jumpCount++;
     }
     
-    private void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if(collision.gameObject.CompareTag("Wall")) canWallJump = true;
+    }
+    private void OnTriggerExit(Collider collision)
+    {
+        if(collision.gameObject.CompareTag("Wall")) canWallJump = false;
+    }
+    private void OnTriggerStay(Collider collision)
+    {
+        if(collision.gameObject.CompareTag("Wall") && canWallJump && Keyboard.current.spaceKey.wasPressedThisFrame && (Keyboard.current.aKey.isPressed||Keyboard.current.leftArrowKey.isPressed||Keyboard.current.dKey.isPressed||Keyboard.current.rightArrowKey.isPressed))
         {
-            jumpCount = 0; //Resets jumps
+            canWallJump = false;
+            Jump();
+            jumpCount--;
+            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+            {
+                velocity.x = -5f;
+            }
+            else
+            {
+                velocity.x = 5f;
+            }
         }
     }
 

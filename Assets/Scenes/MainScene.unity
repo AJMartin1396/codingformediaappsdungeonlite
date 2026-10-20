@@ -1824,7 +1824,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5575896854812707119, guid: d36abb3ba9a3b4c4fb42bc2012c4bf3e, type: 3}
       propertyPath: gravity
-      value: 0.1
+      value: -9.81
       objectReference: {fileID: 0}
     - target: {fileID: 5575896854812707119, guid: d36abb3ba9a3b4c4fb42bc2012c4bf3e, type: 3}
       propertyPath: m_Enabled
@@ -1832,7 +1832,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8106729196923275049, guid: d36abb3ba9a3b4c4fb42bc2012c4bf3e, type: 3}
       propertyPath: m_Center.y
-      value: 0.08
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8106729196923275049, guid: d36abb3ba9a3b4c4fb42bc2012c4bf3e, type: 3}
       propertyPath: m_SkinWidth
