@@ -1,5 +1,6 @@
 using System.Threading;
 using UnityEngine;
+using Unity.Mathematics;
 using UnityEngine.InputSystem; // Required for the new Input System
 
 [RequireComponent(typeof(Rigidbody))]
@@ -14,13 +15,14 @@ public class SimplePlayerMovement : MonoBehaviour
     //New and initial variables
     public float speed = 6f;
     public float gravity = -9.81f;
-    public float airResist = 0.2f;
+    public float airResist = 2f;
     private CharacterController controller;
     private GameObject player;
 
 
     //new variable created by connor for jumping
-    private Vector3 velocity;
+    [SerializeField] private Vector3 velocity;
+    private Vector3 move;
 
     void Start()
     {
@@ -36,7 +38,7 @@ public class SimplePlayerMovement : MonoBehaviour
         float moveZ = 0f;
 
 
-        if (controller.isGrounded && velocity.y < 0f) //reset velocity and jump count here only while grounded and not moving horizontally
+        if (controller.isGrounded) //reset velocity and jump count here only while grounded and not moving horizontally
         {   
             velocity.x = 0f;
             velocity.y = -2f;
@@ -54,18 +56,21 @@ public class SimplePlayerMovement : MonoBehaviour
         controller.Move(velocity * Time.deltaTime);
 
         //makes the wall jump slow down
-        if (velocity.x >0) velocity.x -= airResist;
-        if (velocity.x<0) velocity.x += airResist;
+        if (velocity.x >0) velocity.x -= airResist*Time.deltaTime;
+        if (velocity.x<0) velocity.x += airResist*Time.deltaTime;
 
 
         // Check WASD or Arrow keys using the new Input System
-        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveX = -1f;
-        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveX = 1f;
-        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveZ = -1f;
-        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveZ = 1f;
+        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveX += -1f*Time.deltaTime;
+        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveX += 1f*Time.deltaTime;
+        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveZ += -1f*Time.deltaTime;
+        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveZ += 1f*Time.deltaTime;
 
         // Combine inputs into a direction vector and normalize so diagonal movement isn't faster
-        Vector3 move = new Vector3(moveX, 0, moveZ).normalized;
+        moveX = math.clamp(moveX,-5f,5f);
+        moveZ = math.clamp(moveZ,-5f,5f);
+        
+        Debug.Log("moveX: " + moveX);
 
         // Move the player
         controller.Move(move * speed * Time.deltaTime);
@@ -93,11 +98,11 @@ public class SimplePlayerMovement : MonoBehaviour
             jumpCount--;
             if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
             {
-                velocity.x = -5f;
+                velocity.x = -7f;
             }
             else
             {
-                velocity.x = 5f;
+                velocity.x = 7f;
             }
         }
     }
