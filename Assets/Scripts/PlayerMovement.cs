@@ -17,8 +17,7 @@ public class SimplePlayerMovement : MonoBehaviour
     public float gravity = -9.81f;
     private CharacterController controller;
     private GameObject player;
-    private float moveFactor = -2f;
-    private float friction = -1f;
+    
 
 
     //new variable created by connor for jumping
@@ -36,6 +35,52 @@ public class SimplePlayerMovement : MonoBehaviour
         // Ensure a keyboard is connected
         if (Keyboard.current == null) return;
 
+        // Change movement variables to change with speed
+        float topSpeed = speed/4;
+        float friction = -speed/3;
+        
+        if (Keyboard.current.spaceKey.wasPressedThisFrame && ((jumpCount < maxJumps)||canWallJump)) //only allow jump on keyboard pressed and if the jump count is less than the maxjumps
+        {
+            if (canWallJump&&(jumpCount==maxJumps))
+            {
+                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+                {
+                    canWallJump = false;
+                    jumpCount--;
+                    Jump();
+                    move.x = -3f;
+                }
+                else if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
+                {
+                    canWallJump = false;
+                    jumpCount--;
+                    Jump();
+                    move.x = 3f;
+                }
+            }
+            else Jump();
+        }
+        if (Keyboard.current.spaceKey.wasPressedThisFrame) Debug.Log("Grounded?: "+canWallJump);
+
+        //make the player jump
+        velocity.y += 2.5f*gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+
+
+
+        // Check WASD or Arrow keys using the new Input System
+        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) move.x += -speed*Time.deltaTime;
+        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) move.x += speed*Time.deltaTime;
+        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) move.z += -speed*Time.deltaTime;
+        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) move.z += speed*Time.deltaTime;
+
+        // Clamps player speed to go no faster than max speed, which is determined by speed
+        move.x = math.clamp(move.x,-topSpeed,topSpeed);
+        move.z = math.clamp(move.z,-topSpeed,topSpeed);
+        
+        Debug.Log("isGrounded: " + controller.isGrounded);
+        Debug.Log("move.x: "+move.x);
+        Debug.Log("canWallJump: "+canWallJump);
 
         if (controller.isGrounded) //reset velocity and jump count here only while grounded and not moving horizontally
         {   
@@ -47,32 +92,6 @@ public class SimplePlayerMovement : MonoBehaviour
             if (move.z < 0f) move.z -= friction * Time.deltaTime;
         }
 
-        
-
-        if (Keyboard.current.spaceKey.wasPressedThisFrame && jumpCount < maxJumps) //only allow jump on keyboard pressed and if the jump count is less than the maxjumps
-        {
-            Jump();
-        }
-        if (Keyboard.current.spaceKey.wasPressedThisFrame) Debug.Log("Grounded?: "+canWallJump);
-
-        //make the player jump
-        velocity.y += 2*gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
-
-
-
-        // Check WASD or Arrow keys using the new Input System
-        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) move.x += moveFactor*Time.deltaTime;
-        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) move.x += -moveFactor*Time.deltaTime;
-        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) move.z += moveFactor*Time.deltaTime;
-        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) move.z += -moveFactor*Time.deltaTime;
-
-        // Combine inputs into a direction vector and normalize so diagonal movement isn't faster
-        move.x = math.clamp(move.x,-5f,5f);
-        move.z = math.clamp(move.z,-5f,5f);
-        
-        Debug.Log("move.x: " + move.x);
-
         // Move the player
         controller.Move(move * speed * Time.deltaTime);
     }
@@ -80,6 +99,8 @@ public class SimplePlayerMovement : MonoBehaviour
     {
         velocity.y = Mathf.Sqrt(jumpForce * -1f * gravity);
         jumpCount++;
+        //Change direction if opposite direction is held while midair
+        if (((move.x>0)&&(Keyboard.current.aKey.isPressed||Keyboard.current.leftArrowKey.isPressed))||(move.x<0&&(Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed))) move.x*=-1;
     }
     
     private void OnTriggerEnter(Collider collision)
@@ -89,23 +110,6 @@ public class SimplePlayerMovement : MonoBehaviour
     private void OnTriggerExit(Collider collision)
     {
         if(collision.gameObject.CompareTag("Wall")) canWallJump = false;
-    }
-    private void OnTriggerStay(Collider collision)
-    {
-        if(collision.gameObject.CompareTag("Wall") && canWallJump && Keyboard.current.spaceKey.wasPressedThisFrame && (Keyboard.current.aKey.isPressed||Keyboard.current.leftArrowKey.isPressed||Keyboard.current.dKey.isPressed||Keyboard.current.rightArrowKey.isPressed))
-        {
-            canWallJump = false;
-            Jump();
-            jumpCount--;
-            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
-            {
-                velocity.x = -7f;
-            }
-            else
-            {
-                velocity.x = 7f;
-            }
-        }
     }
 
 }
