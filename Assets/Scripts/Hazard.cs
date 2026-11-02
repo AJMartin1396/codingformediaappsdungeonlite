@@ -35,6 +35,7 @@ public class Hazard : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
+            if (GameManager.Instance != null) GameManager.Instance.hitCount += 1;
             other.GetComponent<PlayerHealth>()?.TakeDamage(damage);
             Destroy(gameObject);
         }
