@@ -63,10 +63,8 @@ public class SimplePlayerMovement : MonoBehaviour
         if (Keyboard.current.spaceKey.wasPressedThisFrame) Debug.Log("Grounded?: "+canWallJump);
 
         //make the player jump
-        velocity.y += 2.5f*gravity * Time.deltaTime;
+        velocity.y += 2.35f*gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
-
-
 
         // Check WASD or Arrow keys using the new Input System
         if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) move.x += -speed*Time.deltaTime;
@@ -75,12 +73,9 @@ public class SimplePlayerMovement : MonoBehaviour
         if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) move.z += speed*Time.deltaTime;
 
         // Clamps player speed to go no faster than max speed, which is determined by speed
-        move.x = math.clamp(move.x,-topSpeed,topSpeed);
-        move.z = math.clamp(move.z,-topSpeed,topSpeed);
+
         
-        Debug.Log("isGrounded: " + controller.isGrounded);
         Debug.Log("move.x: "+move.x);
-        Debug.Log("canWallJump: "+canWallJump);
 
         if (controller.isGrounded) //reset velocity and jump count here only while grounded and not moving horizontally
         {   
@@ -91,6 +86,10 @@ public class SimplePlayerMovement : MonoBehaviour
             if (move.z > 0f) move.z += friction * Time.deltaTime;
             if (move.z < 0f) move.z -= friction * Time.deltaTime;
         }
+        Debug.Log("magnitude: "+ move.magnitude);
+
+        move.x = math.clamp(move.x,-topSpeed,topSpeed);
+        move.z = math.clamp(move.z,-topSpeed,topSpeed);
 
         // Move the player
         controller.Move(move * speed * Time.deltaTime);
