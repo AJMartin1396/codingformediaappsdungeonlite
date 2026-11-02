@@ -17,7 +17,7 @@ public class SimplePlayerMovement : MonoBehaviour
     public float gravity = -9.81f;
     private CharacterController controller;
     private GameObject player;
-    
+
 
 
     //new variable created by connor for jumping
@@ -38,24 +38,42 @@ public class SimplePlayerMovement : MonoBehaviour
         // Change movement variables to change with speed
         float topSpeed = speed/4;
         float friction = -speed/3;
-        
+        bool holdingLeft = Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed;
+        bool holdingRight = Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed;
+        bool holdingForward = Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed;
+        bool holdingBack = Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed;
+
         if (Keyboard.current.spaceKey.wasPressedThisFrame && ((jumpCount < maxJumps)||canWallJump)) //only allow jump on keyboard pressed and if the jump count is less than the maxjumps
         {
             if (canWallJump&&(jumpCount==maxJumps))
             {
-                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+                if (holdingRight)
                 {
                     canWallJump = false;
                     jumpCount--;
                     Jump();
                     move.x = -3f;
                 }
-                else if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
+                else if (holdingLeft)
                 {
                     canWallJump = false;
                     jumpCount--;
                     Jump();
                     move.x = 3f;
+                }
+                else if (holdingForward)
+                {
+                    canWallJump = false;
+                    jumpCount--;
+                    Jump();
+                    move.z = -3f;
+                }
+                else if (holdingBack)
+                {
+                    canWallJump = false;
+                    jumpCount--;
+                    Jump();
+                    move.z = 3f;
                 }
             }
             else Jump();
@@ -67,10 +85,10 @@ public class SimplePlayerMovement : MonoBehaviour
         controller.Move(velocity * Time.deltaTime);
 
         // Check WASD or Arrow keys using the new Input System
-        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) move.x += -speed*Time.deltaTime;
-        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) move.x += speed*Time.deltaTime;
-        if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) move.z += -speed*Time.deltaTime;
-        if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) move.z += speed*Time.deltaTime;
+        if (holdingLeft) move.x += -speed*Time.deltaTime;
+        if (holdingRight) move.x += speed*Time.deltaTime;
+        if (holdingBack) move.z += -speed*Time.deltaTime;
+        if (holdingForward) move.z += speed*Time.deltaTime;
 
         // Clamps player speed to go no faster than max speed, which is determined by speed
 
@@ -90,6 +108,7 @@ public class SimplePlayerMovement : MonoBehaviour
 
         move.x = math.clamp(move.x,-topSpeed,topSpeed);
         move.z = math.clamp(move.z,-topSpeed,topSpeed);
+        
 
         // Move the player
         controller.Move(move * speed * Time.deltaTime);
