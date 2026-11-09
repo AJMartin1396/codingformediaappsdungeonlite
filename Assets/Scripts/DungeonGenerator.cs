@@ -13,6 +13,7 @@ public class DungeonGenerator : MonoBehaviour
     [Header("Generator Settings")]
     public float roomSize = 20f;
     private Vector3 nextSpawnPos = Vector3.zero;
+    private int dangerChance = 40;
 
     // A queue tracking what room types are coming up next
     private Queue<RoomType> roomQueue = new Queue<RoomType>();
@@ -22,12 +23,35 @@ public class DungeonGenerator : MonoBehaviour
     void Start()
     {
         // 1. Build the exact sequence you want for this level loop
-        roomQueue.Enqueue(RoomType.Danger);
-        roomQueue.Enqueue(RoomType.Safe);
-        roomQueue.Enqueue(RoomType.Danger);
-        roomQueue.Enqueue(RoomType.Safe);
+        if (GameManager.Instance != null)
+        {
+            switch (GameManager.Instance.hitCount)
+            {
+                case 0:
+                    dangerChance += 10;
+                    break;
+                case 1:
+                    dangerChance += 5;
+                    break;
+                case 3:
+                    dangerChance -= 5;
+                    break;
+                default:
+                    if (GameManager.Instance.hitCount >= 4) dangerChance -= 10;
+                    break;
+            }
+            Mathf.Clamp(dangerChance, 30, 90);
+            for (int i = 0; i<(GameManager.Instance.currentLevel+2); i++)
+            {
+                int rng = Random.Range(1, 100);
+                if (rng <= dangerChance) roomQueue.Enqueue(RoomType.Danger);
+                else roomQueue.Enqueue(RoomType.Safe);
+            }
+            GameManager.Instance.hitCount = 0;
+        }
         roomQueue.Enqueue(RoomType.Boss);
         roomQueue.Enqueue(RoomType.Treasure);
+
 
         // 2. Spawn the initial Start Room
         Instantiate(startRoomPrefab, nextSpawnPos, Quaternion.identity);

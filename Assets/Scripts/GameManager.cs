@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     public int extraMaxHealthPurchased = 0; // Purchased via health upgrade
     public bool hasVampiricUpgrades = false; // Purchased via leech upgrade
     public int vampiricHealAmount = 10;
+    public int hitCount = 0;
 
     void Awake()
     {
