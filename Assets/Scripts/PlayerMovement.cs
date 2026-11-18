@@ -13,10 +13,22 @@ public class SimplePlayerMovement : MonoBehaviour
     private const int maxJumps = 2;
     private bool canWallJump = false;
     //New and initial variables
-    public float speed = 6f;
+    public float speed = 4f;
     public float gravity = -9.81f;
     private CharacterController controller;
     private GameObject player;
+    private float pMoveX;
+    private float pMoveZ;
+    private float unclampedMoveX;
+    private float unclampedMoveZ;
+    private float dashingTimer;
+    public float dashCooldown = 5f;
+    private bool canDash = false;
+    private float dashCoolCounter;
+    private bool holdingForward;
+    private bool holdingLeft;
+    private bool holdingRight;
+    private bool holdingBack;
 
 
 
@@ -38,89 +50,157 @@ public class SimplePlayerMovement : MonoBehaviour
         // Change movement variables to change with speed
         float topSpeed = speed/4;
         float friction = -speed/3;
-        bool holdingLeft = Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed;
-        bool holdingRight = Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed;
-        bool holdingForward = Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed;
-        bool holdingBack = Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed;
-
+        holdingLeft = Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed;
+        holdingRight = Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed;
+        holdingForward = Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed;
+        holdingBack = Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed;
+        bool isInputing = false;
+        
+        if (holdingBack||holdingRight||holdingForward||holdingLeft) isInputing = true;
+        if (Keyboard.current.shiftKey.wasPressedThisFrame && canDash)
+        {
+            Dash();
+            canDash = false;
+            dashCoolCounter = 0;
+        }
+        //Jumping Logic
         if (Keyboard.current.spaceKey.wasPressedThisFrame && ((jumpCount < maxJumps)||canWallJump)) //only allow jump on keyboard pressed and if the jump count is less than the maxjumps
         {
-            if (canWallJump&&(jumpCount==maxJumps))
-            {
+            if (canWallJump)
+            {   
+                //Wall Jumping Logic
                 if (holdingRight)
                 {
                     canWallJump = false;
                     jumpCount--;
-                    Jump();
-                    move.x = -3f;
+                    Jump(jumpForce*1.5f);
+                    pMoveX *= -1;
+                    unclampedMoveX = -speed*4;
                 }
                 else if (holdingLeft)
                 {
                     canWallJump = false;
                     jumpCount--;
-                    Jump();
-                    move.x = 3f;
+                    Jump(jumpForce*1.5f);
+                    pMoveX *= -1;
+                    unclampedMoveX = speed*4;
                 }
                 else if (holdingForward)
                 {
                     canWallJump = false;
                     jumpCount--;
-                    Jump();
-                    move.z = -3f;
+                    Jump(jumpForce*1.5f);
+                    pMoveZ *= -1;
+                    unclampedMoveZ = -speed*4;
                 }
                 else if (holdingBack)
                 {
                     canWallJump = false;
                     jumpCount--;
-                    Jump();
-                    move.z = 3f;
+                    Jump(jumpForce*1.5f);
+                    pMoveZ *= -1;
+                    unclampedMoveZ = speed*4;
                 }
             }
-            else Jump();
+            else if(jumpCount>1) Jump(jumpForce*2);
+            else Jump(jumpForce);
         }
-        if (Keyboard.current.spaceKey.wasPressedThisFrame) Debug.Log("Grounded?: "+canWallJump);
+        if (!canDash)
+        {
+            dashCoolCounter+=Time.deltaTime;
+            if (dashCoolCounter>=dashCooldown) canDash = true;
+        }
 
         //make the player jump
         velocity.y += 2.35f*gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
 
         // Check WASD or Arrow keys using the new Input System
-        if (holdingLeft) move.x += -speed*Time.deltaTime;
-        if (holdingRight) move.x += speed*Time.deltaTime;
-        if (holdingBack) move.z += -speed*Time.deltaTime;
-        if (holdingForward) move.z += speed*Time.deltaTime;
+        if (holdingLeft) pMoveX += -speed*Time.deltaTime;
+        if (holdingRight) pMoveX += speed*Time.deltaTime;
+        if (holdingBack) pMoveZ += -speed*Time.deltaTime;
+        if (holdingForward) pMoveZ += speed*Time.deltaTime;
 
-        // Clamps player speed to go no faster than max speed, which is determined by speed
-
-        
-        Debug.Log("move.x: "+move.x);
 
         if (controller.isGrounded) //reset velocity and jump count here only while grounded and not moving horizontally
         {   
+            unclampedMoveX = 0;
+            unclampedMoveZ = 0;
             velocity.y = -2f;
             jumpCount = 0;
-            if (move.x < 0f) move.x -= friction * Time.deltaTime;
-            if (move.x > 0f) move.x += friction * Time.deltaTime;
-            if (move.z > 0f) move.z += friction * Time.deltaTime;
-            if (move.z < 0f) move.z -= friction * Time.deltaTime;
+            if (pMoveX < 0f){
+                if(!isInputing){
+                    pMoveX -= 2*friction * Time.deltaTime;
+                }
+                pMoveX -= friction * Time.deltaTime;
+            } 
+            if (pMoveX > 0f){
+                if(!isInputing){
+                    pMoveX += 2*friction * Time.deltaTime;
+                }
+                pMoveX += friction * Time.deltaTime;
+            } 
+            if (pMoveZ > 0f){
+                if(!isInputing){
+                    pMoveZ += 2*friction * Time.deltaTime;
+                }
+                pMoveZ += friction * Time.deltaTime;
+            } 
+            if (pMoveZ < 0f){
+                if(!isInputing){
+                    pMoveZ -= 2*friction * Time.deltaTime;
+                }
+                pMoveZ -= friction * Time.deltaTime;
+            } 
+        if ((unclampedMoveX != 0 || unclampedMoveZ != 0)&&dashingTimer<=3)
+        {
+            if (unclampedMoveX < 0f){
+                unclampedMoveX -=speed * Time.deltaTime;
+            } 
+            if (unclampedMoveX > 0f){
+                unclampedMoveX += speed * Time.deltaTime;
+            } 
+            if (unclampedMoveZ > 0f){
+                unclampedMoveZ += speed * Time.deltaTime;
+            } 
+            if (unclampedMoveZ < 0f){
+                unclampedMoveZ -= speed * Time.deltaTime;
+            } 
         }
-        Debug.Log("magnitude: "+ move.magnitude);
+        }
 
-        move.x = math.clamp(move.x,-topSpeed,topSpeed);
-        move.z = math.clamp(move.z,-topSpeed,topSpeed);
-        
+        // Clamps player speed to go no faster than max speed, which is determined by speed
+        pMoveX = math.clamp(pMoveX,-topSpeed,topSpeed);
+        pMoveZ = math.clamp(pMoveZ,-topSpeed,topSpeed);
+        // Adds pMove to actual vector and normalizes it.
+        move.x = pMoveX;
+        move.z = pMoveZ;
+        move = Vector3.ClampMagnitude(move,topSpeed);
+        move.x += unclampedMoveX*Time.deltaTime*50;
+        move.z += unclampedMoveZ*Time.deltaTime*50;
 
         // Move the player
         controller.Move(move * speed * Time.deltaTime);
     }
-    void Jump()
+    void Jump(float jForce)
     {
-        velocity.y = Mathf.Sqrt(jumpForce * -1f * gravity);
+        velocity.y = Mathf.Sqrt(jForce * -1f * gravity);
         jumpCount++;
         //Change direction if opposite direction is held while midair
-        if (((move.x>0)&&(Keyboard.current.aKey.isPressed||Keyboard.current.leftArrowKey.isPressed))||(move.x<0&&(Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed))) move.x*=-1;
+        if (((move.x>0)&&(Keyboard.current.aKey.isPressed||Keyboard.current.leftArrowKey.isPressed))||(move.x<0&&(Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed))) pMoveX*=-1;
     }
     
+    void Dash()
+    {
+        if (holdingRight) unclampedMoveX += 5;
+        if (holdingLeft) unclampedMoveX -= 5;
+        if (holdingForward||(!holdingRight&&!holdingLeft&&!holdingBack)) unclampedMoveZ += 5;
+        if (holdingBack) unclampedMoveZ -= 5;
+        while (dashingTimer < 3) dashingTimer += Time.deltaTime;
+        dashingTimer = 0;
+
+    }
+
     private void OnTriggerEnter(Collider collision)
     {
         if(collision.gameObject.CompareTag("Wall")) canWallJump = true;
